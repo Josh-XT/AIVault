@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-convertanything:
+  tests:
     uses: devxt-llc/ezlocalai/.github/workflows/test-with-ezlocalai.yml@main
     with:
       additional-python-dependencies: requests
       clone-repo: true
-      
+
