@@ -1,0 +1,14 @@
+name: Run tests
+
+on:
+  push:
+    branches: ["*"]
+  workflow_dispatch:
+
+jobs:
+  test-convertanything:
+    uses: devxt-llc/ezlocalai/.github/workflows/test-with-ezlocalai.yml@main
+    with:
+      additional-python-dependencies: requests
+      clone-repo: true
+      
