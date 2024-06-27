@@ -33,9 +33,9 @@ def get_tokens(text: str) -> int:
 
 def get_providers():
     providers = []
-    for file in os.listdir("providers"):
+    for file in os.listdir("./aivault/providers"):
         if file.endswith(".py") and not file.startswith("__"):
-            module = importlib.import_module(f"providers.{file[:-3]}")
+            module = importlib.import_module(f"aivault.providers.{file[:-3]}")
             for obj in dir(module):
                 if obj.endswith("Provider"):
                     providers.append(getattr(module, obj))
