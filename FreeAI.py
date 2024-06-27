@@ -50,7 +50,7 @@ class FreeAI:
                 available_providers = self.get_available_providers()
                 if available_providers:
                     provider = random.choice(available_providers)
-                    self.provider = provider["class"]
+                    self.provider = provider["class"]()
                     self.provider_name = provider["name"]
                     self.model = random.choice(provider["models"])
                     logging.info(
