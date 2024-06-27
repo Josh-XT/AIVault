@@ -24,7 +24,7 @@ def get_providers():
     return provider_list
 
 
-class FreeAI:
+class AIVault:
     def __init__(self, **kwargs):
         self.providers = get_providers()
         self.provider = random.choice(self.providers)["class"]()
@@ -36,7 +36,7 @@ class FreeAI:
 
     async def inference(self, prompt, images: list = []):
         logging.info(
-            f"[FreeAI] Using provider: {self.friendly_provider_name} with model: {self.model}"
+            f"[AIVault] Using provider: {self.friendly_provider_name} with model: {self.model}"
         )
         try:
             return await self.provider.inference(
@@ -44,7 +44,7 @@ class FreeAI:
                 messages=[{"role": "user", "content": prompt}],
             )
         except Exception as e:
-            logging.error(f"[FreeAI] {e}")
+            logging.error(f"[AIVault] {e}")
             self.failures.append({"provider": self.provider_name, "model": self.model})
             if len(self.failures) < len(self.providers):
                 available_providers = self.get_available_providers()
@@ -54,7 +54,7 @@ class FreeAI:
                     self.provider_name = provider["name"]
                     self.model = random.choice(provider["models"])
                     logging.info(
-                        f"[FreeAI] Switching to provider: {self.friendly_provider_name} with model: {self.model}"
+                        f"[AIVault] Switching to provider: {self.friendly_provider_name} with model: {self.model}"
                     )
                     return await self.inference(prompt=prompt, images=images)
                 else:
