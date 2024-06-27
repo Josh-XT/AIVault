@@ -40,7 +40,17 @@ class FreeGPTProvider:
             async with session.post(
                 f"{domain}/api/generate", json=data, proxy=proxy
             ) as response:
-                response.raise_for_status()
+                try:
+                    response.raise_for_status()
+                except Exception as e:
+                    self.failed_domains.append(domain)
+                    # Rerun with the other domain if self.failed_domains < len(domains)
+                    if len(self.failed_domains) < len(domains):
+                        return await self.inference(
+                            messages=messages, proxy=proxy, **kwargs
+                        )
+                    else:
+                        raise Exception("Rate limited")
                 content = await response.text()
                 if "当" in content or "流" in content:
                     self.failed_domains.append(domain)
