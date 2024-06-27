@@ -29,13 +29,14 @@ class FreeAI:
         self.providers = get_providers()
         self.provider = random.choice(self.providers)["class"]()
         self.provider_name = self.provider.__class__.__name__
+        self.friendly_provider_name = str(self.provider_name).split("Provider")[0]
         self.model = random.choice(self.provider.models)
         self.failures = []
         self.provider_failure_count = 0
 
     async def inference(self, prompt, images: list = []):
         logging.info(
-            f"[FreeAI] Using provider: {self.provider_name} with model: {self.model}"
+            f"[FreeAI] Using provider: {self.friendly_provider_name} with model: {self.model}"
         )
         try:
             return await self.provider.inference(
@@ -53,7 +54,7 @@ class FreeAI:
                     self.provider_name = provider["name"]
                     self.model = random.choice(provider["models"])
                     logging.info(
-                        f"[FreeAI] Switching to provider: {self.provider_name} with model: {self.model}"
+                        f"[FreeAI] Switching to provider: {self.friendly_provider_name} with model: {self.model}"
                     )
                     return await self.inference(prompt=prompt, images=images)
                 else:
