@@ -1,5 +1,6 @@
 import uuid
 import secrets
+import requests
 from aiohttp import ClientSession
 from typing import List, Dict, Any
 
@@ -16,16 +17,14 @@ class BlackboxProvider:
         self,
         messages: List[Dict[str, Any]],
         proxy: str = None,
-        image: bytes = None,
-        image_name: str = None,
+        images: List[str] = [],
         **kwargs,
     ) -> str:
-        if image is not None:
+        if images != []:
             messages[-1]["data"] = {
-                "fileText": image_name,
-                "imageBase64": image.decode("utf-8"),
+                "fileText": f"{uuid.uuid4()}.jpg",
+                "imageBase64": requests.get(images[0]).content.decode("utf-8"),
             }
-
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "Accept": "*/*",

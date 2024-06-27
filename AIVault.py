@@ -1,7 +1,34 @@
+import os
+import time
 import logging
 import random
 import importlib
-import os
+import tiktoken
+from typing import List, Optional, Dict
+from pydantic import BaseModel
+
+
+class ChatCompletions(BaseModel):
+    model: str = "gpt-4o"
+    messages: List[dict] = None
+    temperature: Optional[float] = 0.9
+    top_p: Optional[float] = 1.0
+    tools: Optional[List[dict]] = None
+    tools_choice: Optional[str] = "auto"
+    n: Optional[int] = 1
+    stream: Optional[bool] = False
+    stop: Optional[List[str]] = None
+    max_tokens: Optional[int] = 4096
+    presence_penalty: Optional[float] = 0.0
+    frequency_penalty: Optional[float] = 0.0
+    logit_bias: Optional[Dict[str, float]] = None
+    user: Optional[str] = ""
+
+
+def get_tokens(text: str) -> int:
+    encoding = tiktoken.get_encoding("cl100k_base")
+    num_tokens = len(encoding.encode(text))
+    return num_tokens
 
 
 def get_providers():
@@ -34,7 +61,7 @@ class AIVault:
         self.failures = []
         self.provider_failure_count = 0
 
-    async def inference(self, prompt, images: list = []):
+    async def inference(self, prompt, images: list = [], **kwargs):
         logging.info(
             f"[AIVault] Using provider: {self.friendly_provider_name} with model: {self.model}"
         )
@@ -42,6 +69,8 @@ class AIVault:
             return await self.provider.inference(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
+                images=images,
+                **kwargs,
             )
         except Exception as e:
             logging.error(f"[AIVault] {e}")
@@ -88,3 +117,66 @@ class AIVault:
                 provider_copy["models"] = available_models
                 available_providers.append(provider_copy)
         return available_providers
+
+    # Chat Completion wrapper
+    async def chat_completions(
+        self,
+        prompt: ChatCompletions,
+    ):
+        images = []
+        new_prompt = ""
+        for message in prompt.messages:
+            if "content" not in message:
+                continue
+            if isinstance(message["content"], str):
+                role = message["role"] if "role" in message else "User"
+                if role.lower() == "system":
+                    if "/" in message["content"]:
+                        new_prompt += f"{message['content']}\n\n"
+                if role.lower() == "user":
+                    new_prompt += f"{message['content']}\n\n"
+            if isinstance(message["content"], list):
+                for msg in message["content"]:
+                    if "text" in msg:
+                        role = message["role"] if "role" in message else "User"
+                        if role.lower() == "user":
+                            new_prompt += f"{msg['text']}\n\n"
+                    if "image_url" in msg:
+                        url = (
+                            msg["image_url"]["url"]
+                            if "url" in msg["image_url"]
+                            else msg["image_url"]
+                        )
+                        if url:
+                            images.append(url)
+        response = await self.inference(
+            new_prompt,
+            images=images,
+            **prompt.model_dump(),
+        )
+        prompt_tokens = get_tokens(str(new_prompt))
+        completion_tokens = get_tokens(str(response))
+        total_tokens = int(prompt_tokens) + int(completion_tokens)
+        res_model = {
+            "id": prompt.user,
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": prompt.model,
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": str(response),
+                    },
+                    "finish_reason": "stop",
+                    "logprobs": None,
+                }
+            ],
+            "usage": {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": total_tokens,
+            },
+        }
+        return res_model
